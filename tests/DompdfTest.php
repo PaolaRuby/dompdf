@@ -3,8 +3,11 @@ namespace Dompdf\Tests;
 
 use DOMDocument;
 use Dompdf\Adapter\CPDF;
+use Dompdf\Canvas;
 use Dompdf\Css\Stylesheet;
 use Dompdf\Dompdf;
+use Dompdf\FontMetrics;
+use Dompdf\Frame;
 use Dompdf\Frame\FrameTree;
 use Dompdf\Options;
 use Dompdf\Tests\TestCase;
@@ -97,9 +100,10 @@ class DompdfTest extends TestCase
         $dompdf->setCallbacks([
             [
                 "event" => $event,
-                "f" => function ($infos) use (&$called) {
-                    $this->assertIsArray($infos);
-                    $this->assertCount(4, $infos);
+                "f" => function ($frame, $canvas, $fontMetrics) use (&$called) {
+                    $this->assertInstanceOf(Frame::class, $frame);
+                    $this->assertInstanceOf(Canvas::class, $canvas);
+                    $this->assertInstanceOf(FontMetrics::class, $fontMetrics);
                     $called++;
                 }
             ]
@@ -185,8 +189,7 @@ class DompdfTest extends TestCase
         // will dispose of it before dompdf->render finishes
         $dompdf->setCallbacks(['test' => [
             'event' => 'end_page_render',
-            'f' => function($params) use (&$text_frame_contents) {
-                $frame = $params["frame"];
+            'f' => function (Frame $frame) use (&$text_frame_contents) {
                 foreach ($frame->get_children() as $child) {
                     foreach ($child->get_children() as $grandchild) {
                         $text_frame_contents[] = $grandchild->get_text();
